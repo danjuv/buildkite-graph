@@ -49,16 +49,25 @@ const integration = new CommandStep([
 const conditional = new TestConditional(test);
 const pipeline = new Pipeline('My pipeline').add(conditional).add(integration);
 
-async function commandFn(entity: Command): Promise<Command> {
-  if (entity.timeout !== 0 && entity.timeout !== Infinity) {
-    return new TimeoutCommand(entity);
+async function commandFn(entity: Command) {
+  return
+}
+
+async function stepFn(entity: Step) {
+  if (entity instanceof CommandStep) {
+    for (let i = 0; i < entity.command.length; i++) {
+      let command = entity.command[i]
+      if (command.timeout !== 0 && command.timeout !== Infinity) {
+        entity.command[i] = new TimeoutCommand(command);
+      }
+    }
   }
 
-  return entity;
+
 }
 
 evaluatePipeline(pipeline).then((p) =>
-  walk(p, { commandFn: commandFn }).then((p) => {
+  walk(p, { commandFn, stepFn }).then((p) => {
     new YamlSerializer({ explicitDependencies: true })
       .serialize(p)
       .then(console.log);
